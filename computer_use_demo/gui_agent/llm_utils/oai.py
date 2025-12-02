@@ -21,7 +21,7 @@ def run_oai_interleaved(messages: list, system: str, llm: str, api_key: str, max
     if type(messages) == list:
         for item in messages:
             print(f"item: {item}")
-            contents = []
+            contents = []  # Reset contents for each item
             if isinstance(item, dict):
                 for cnt in item["content"]:
                     if isinstance(cnt, str):
@@ -30,25 +30,21 @@ def run_oai_interleaved(messages: list, system: str, llm: str, api_key: str, max
                             content = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                         else:
                             content = {"type": "text", "text": cnt}
-                    
-                    # if isinstance(cnt, list):
-                        
-                    contents.append(content)
+                        contents.append(content)
                 message = {"role": item["role"], "content": contents}
-                
+
             elif isinstance(item, str):
                 if is_image_path(item):
                     base64_image = encode_image(item)
                     contents.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}})
-                    message = {"role": "user", "content": contents}
                 else:
                     contents.append({"type": "text", "text": item})
-                    message = {"role": "user", "content": contents}
-                    
-            else:  # str
-                contents.append({"type": "text", "text": item})
                 message = {"role": "user", "content": contents}
-            
+
+            else:  # str - this case handles any other non-dict, non-string types
+                contents.append({"type": "text", "text": str(item)})
+                message = {"role": "user", "content": contents}
+
             final_messages.append(message)
 
     
@@ -81,7 +77,7 @@ def run_oai_interleaved(messages: list, system: str, llm: str, api_key: str, max
         print(f"Error in interleaved openAI: {e}. This may due to your invalid OPENAI_API_KEY. Please check the response: {response.json()} ")
         return response.json()
 
-def run_ssh_llm_interleaved(messages: list, system: str, llm: str, ssh_host: str, ssh_port: int, max_tokens=256, temperature=0.7, do_sample=True):
+def run_ssh_llm_interleaved(messages: list, system: str, llm: str, ssh_host: str, ssh_port: int, max_tokens=256, temperature=0.7):
     """Send chat completion request to SSH remote server"""
     from PIL import Image
     from io import BytesIO
@@ -129,7 +125,7 @@ def run_ssh_llm_interleaved(messages: list, system: str, llm: str, ssh_host: str
         # Process user messages
         if type(messages) == list:
             for item in messages:
-                contents = []
+                contents = []  # Reset contents for each item
                 if isinstance(item, dict):
                     for cnt in item["content"]:
                         if isinstance(cnt, str):
@@ -146,10 +142,19 @@ def run_ssh_llm_interleaved(messages: list, system: str, llm: str, ssh_host: str
                                     "type": "text",
                                     "text": cnt
                                 }
-                        contents.append(content)
+                            contents.append(content)
                     message = {"role": item["role"], "content": contents}
                 else:  # str
-                    contents.append({"type": "text", "text": item})
+                    if is_image_path(item):
+                        base64_image = encode_image(item)
+                        contents.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        })
+                    else:
+                        contents.append({"type": "text", "text": item})
                     message = {"role": "user", "content": contents}
                 final_messages.append(message)
         elif isinstance(messages, str):
@@ -163,8 +168,7 @@ def run_ssh_llm_interleaved(messages: list, system: str, llm: str, ssh_host: str
             "model": llm,
             "messages": final_messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
-            "do_sample": do_sample
+            "max_tokens": max_tokens
         }
         
         print(f"[ssh] Sending chat completion request to model: {llm}")
