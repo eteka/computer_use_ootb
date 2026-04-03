@@ -243,7 +243,7 @@ def process_input(user_input, state):
         yield state['chatbot_messages']  # Yield the updated chatbot_messages to update the chatbot UI
 
 
-with gr.Blocks(theme=gr.themes.Soft()) as demo:
+with gr.Blocks() as demo:
     
     state = gr.State({})  # Use Gradio's state management
     setup_state(state.value)  # Initialize the state
@@ -452,9 +452,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             provider_interactive = True
             api_key_interactive = True
             api_key_placeholder = "claude API key"
-            actor_model_choices = ["claude-3-5-sonnet-20241022"]
-            actor_model_value = "claude-3-5-sonnet-20241022"
-            actor_model_interactive = False
+            actor_model_choices = ["ShowUI", "UI-TARS"]
+            actor_model_value = "ShowUI"
+            actor_model_interactive = True
             api_key_type = "password"  # Display API key in password form
 
         else:
@@ -599,7 +599,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         with gr.Column(scale=1, min_width=50):
             submit_button = gr.Button(value="Send", variant="primary")
 
-    chatbot = gr.Chatbot(label="Chatbot History", type="tuples", autoscroll=True, height=580, group_consecutive_messages=False)
+    chatbot = gr.Chatbot(label="Chatbot History", height=580)
     
     planner_model.change(fn=update_planner_model, inputs=[planner_model, state], outputs=[planner_api_provider, planner_api_key, actor_model])
     planner_api_provider.change(fn=update_api_key_placeholder, inputs=[planner_api_provider, planner_model], outputs=planner_api_key)
@@ -629,4 +629,5 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
 demo.launch(share=False,
             allowed_paths=["./"],
+            server_name="127.0.0.1",
             server_port=7888)  # TODO: allowed_paths
